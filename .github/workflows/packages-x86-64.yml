@@ -1,0 +1,230 @@
+#==========================================================
+# https://github.com/liuweilhy/OpenwrtPackages
+# Description:  Update third-party ipk packages for OpenWrt
+# Lisence:      MIT
+# Author:       liuweilhy
+#==========================================================
+
+name: Update x86-64 ipk packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: 'OpenWrt包版本'
+        required: false
+        default: '24.10'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+    
+
+      - name: Set package version, ISA and date
+        run: |
+          packageversion="${{ github.event.inputs.package_version }}"
+          if [ -z "$packageversion" ]; then
+            packageversion="24.10"
+          fi
+          echo "PACKAGEVERSION=$packageversion" >> $GITHUB_ENV
+          echo "ISA=x86-64" >> $GITHUB_ENV
+          echo "DATETAG=$(date +%Y%m%d)" >> $GITHUB_ENV
+      
+
+      - name: Make packages folder
+        run: |
+          mkdir -p packages
+          echo "PACKAGES=packages" >> $GITHUB_ENV
+
+      - name: Download latest Passwall files
+        run: |
+          mkdir -p passwall
+          cd passwall
+
+          echo "download Passwall files..."
+          latest_tag=$(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | jq -r '.tag_name')
+          # passwall_packages_ipk_x86_64.zip
+          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*passwall_packages_ipk_x86_64.zip"' | cut -d '"' -f 4)
+          # luci-24.10_luci-app-passwall_25.3.9-r1_all.ipk
+          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*luci-24.10.*\.ipk"' | head -1 | cut -d '"' -f 4)
+          # luci-24.10_luci-i18n-passwall-zh-cn_25.067.58328.338d2ec_all.ipk
+          curl -LO $(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | grep -oP '"browser_download_url":\s*".*luci-24.10.*\.ipk"' | tail -1 | cut -d '"' -f 4)
+          echo "Download completed."
+
+          unzip -o passwall_packages_ipk_x86_64.zip
+          rm passwall_packages_ipk_x86_64.zip
+
+          echo "list files of passwall:"
+          ls -l
+          mv * ../packages/
+      
+
+      - name: Download latest AdGuardHome files
+        run: |
+          mkdir -p AdGuardHome
+          cd AdGuardHome
+
+          echo "download AdGuardHome files..."
+          latest_tag=$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest | jq -r '.tag_name')
+          curl -LO "https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_tag}/AdGuardHome_linux_amd64.tar.gz"
+          echo "Download completed."
+
+          ARCH=AdGuardHome_x86_64
+          TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
+          # Download adguardhome core ipk (but not luci-app-adguardhome) to the depends folder
+          curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)adguardhome.*?\.ipk' | while read -r file; do
+            new_file_name=$(echo "$file" | sed 's/~/_/g')
+            curl -o "$new_file_name" "$TARGET_URL$file"
+            ls "$new_file_name"
+          done
+          # Download luci-app-adguardhome ipk to the architecture folder
+          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-adguardhome.*?\.ipk' | while read -r file; do
+            new_file_name=$(echo "$file" | sed 's/~/_/g')
+            curl -o "$new_file_name" "$TARGET_URL$file"
+            ls "$new_file_name"
+          done
+          echo "Download completed."
+
+          tar --one-top-level=AdGuardHome_x86_64 -xvzf AdGuardHome_linux_amd64.tar.gz
+          mv AdGuardHome_x86_64/AdGuardHome/AdGuardHome ./
+          rm AdGuardHome_linux_amd64.tar.gz
+          rm -r AdGuardHome_x86_64/
+
+          echo "list files of AdGuardHome:"
+          ls -l
+          mv * ../packages/
+
+
+      - name: Download latest mosdns files
+        run: |
+          mkdir -p mosdns
+          cd mosdns
+
+          echo "Downloading MosDNS files..."
+          latest_tag=$(curl -sk https://api.github.com/repos/sbwml/luci-app-mosdns/releases | grep "tag_name" | grep v5 | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//;s/ //')
+          # 获取下载链接
+          curl -sk --connect-timeout 10 "https://api.github.com/repos/sbwml/luci-app-mosdns/releases" | grep "browser_download_url" | grep "$latest_tag" > releases.txt
+          if [ $? -ne 0 ]; then
+            echo "Failed to get version information, please check the network status."
+            exit 1
+          fi
+
+          # 下载文件函数
+          download_file() {
+            local url=$1
+            local output_dir=$2
+            local filename=$(basename "$url")
+            echo "Downloading $filename to $output_dir..."
+            curl --connect-timeout 30 -m 600 -kLo "$output_dir/$filename" "$url"
+            if [ $? -ne 0 ]; then
+              echo "Error! Download $filename failed."
+              exit 1
+            fi
+          }
+
+          # 提取下载链接
+          geoip=$(grep "browser_download_url" releases.txt | grep "v2ray-geoip" | head -1 | awk -F '"' '{print $4}')
+          geosite=$(grep "browser_download_url" releases.txt | grep "v2ray-geosite" | head -1 | awk -F '"' '{print $4}')
+          mosdns_x86_64=$(grep "browser_download_url" releases.txt | grep "mosdns_5" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
+          v2dat_x86_64=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
+          luci_app=$(grep "browser_download_url" releases.txt | grep "luci-app-mosdns_" | head -1 | awk -F '"' '{print $4}')
+          luci_i18n=$(grep "browser_download_url" releases.txt | grep "luci-i18n-mosdns-zh-cn" | head -1 | awk -F '"' '{print $4}')
+
+          # 下载文件到对应目录
+          download_file "$mosdns_x86_64" "."
+          download_file "$v2dat_x86_64" "."
+          download_file "$luci_app" "."
+          download_file "$luci_i18n" "."
+          download_file "$geoip" "."
+          download_file "$geosite" "."
+          echo "Download completed."
+
+          rm releases.txt
+
+          echo "list files of AdGuardHome:"
+          ls -l
+          mv * ../packages/
+
+
+      - name: Download latest nikki files
+        run: |
+          mkdir -p nikki
+          cd nikki
+
+          echo "download nikki files..."
+          latest_tag=$(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | jq -r '.tag_name')
+          curl -LO $(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | grep -oP '"browser_download_url":\s*".*nikki_x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          tar --one-top-level=nikki_x86_64-openwrt-24.10 -xvzf nikki_x86_64-openwrt-24.10.tar.gz
+          echo "Download completed."
+
+          mv nikki_x86_64-openwrt-24.10/*.ipk ./
+          rm nikki_x86_64-openwrt-24.10.tar.gz
+          rm -r nikki_x86_64-openwrt-24.10
+
+          echo "list files of nikki:"
+          ls -l
+          mv * ../packages/
+      
+
+      - name: Create OpenClash & openclash directory for git & ipk
+        run: mkdir -p OpenClash Meta openclash-x86
+        
+      - name: Checkout package branch to OpenClash directory
+        uses: actions/checkout@v4
+        with:
+          repository: vernesong/OpenClash
+          ref: package
+          path: OpenClash
+          
+      - name: Checkout core branch to Meta directory
+        uses: actions/checkout@v4
+        with:
+          repository: vernesong/OpenClash
+          path: Meta
+          ref: core
+
+      - name: Copy latest openclash to openclash directory
+        run: |
+          echo "download openclash files..."
+          cp OpenClash/master/*.ipk openclash-x86
+          tar -xzvf Meta/master/meta/clash-linux-amd64.tar.gz -C openclash-x86
+          echo "Download completed."
+
+          cd openclash-x86
+          mv clash clash_meta
+
+          echo "list files of openclash:"
+          ls -l
+          mv *.ipk ../packages/
+          mv clash_meta ../packages/
+
+
+      - name: Download latest PowerOffDevice files
+        run: |
+          mkdir -p poweroffdevice
+          cd poweroffdevice
+
+          echo "download poweroffdevice files..."
+          latest_tag=$(curl -s https://api.github.com/repos/sirpdboy/luci-app-poweroffdevice/releases/latest | jq -r '.tag_name')
+          curl -LO $(curl -s https://api.github.com/repos/sirpdboy/luci-app-poweroffdevice/releases/latest | grep -oP '"browser_download_url":\s*".*luci-.+\.ipk"' | head -1 | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sirpdboy/luci-app-poweroffdevice/releases/latest | grep -oP '"browser_download_url":\s*".*luci-.+\.ipk"' | tail -1 | cut -d '"' -f 4)
+          echo "Download completed."
+
+          echo "list files of poweroffdevice:"
+          ls -l
+          mv * ../packages/
+      
+
+      - name: Upload ipk files as release assets
+        uses: softprops/action-gh-release@v2.1.0
+        with:
+          tag_name: ${{ env.PACKAGEVERSION }}-${{ env.ISA }}-${{ env.DATETAG }}
+          name: "ipk packages for openwrt ${{ env.PACKAGEVERSION }} ${{ env.ISA }} on ${{ env.DATETAG }}"
+          files: packages/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
