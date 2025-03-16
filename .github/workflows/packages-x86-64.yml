@@ -40,6 +40,7 @@ jobs:
           mkdir -p packages
           echo "PACKAGES=packages" >> $GITHUB_ENV
 
+
       - name: Download latest Passwall files
         run: |
           mkdir -p passwall
@@ -73,15 +74,14 @@ jobs:
           curl -LO "https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_tag}/AdGuardHome_linux_amd64.tar.gz"
           echo "Download completed."
 
-          ARCH=AdGuardHome_x86_64
           TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
-          # Download adguardhome core ipk (but not luci-app-adguardhome) to the depends folder
+          # Download adguardhome core ipk (but not luci-app-adguardhome)
           curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)adguardhome.*?\.ipk' | while read -r file; do
             new_file_name=$(echo "$file" | sed 's/~/_/g')
             curl -o "$new_file_name" "$TARGET_URL$file"
             ls "$new_file_name"
           done
-          # Download luci-app-adguardhome ipk to the architecture folder
+          # Download luci-app-adguardhome ipk
           curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-adguardhome.*?\.ipk' | while read -r file; do
             new_file_name=$(echo "$file" | sed 's/~/_/g')
             curl -o "$new_file_name" "$TARGET_URL$file"
@@ -215,6 +215,31 @@ jobs:
           echo "Download completed."
 
           echo "list files of poweroffdevice:"
+          ls -l
+          mv * ../packages/
+
+
+      - name: Download latest autotimeset files
+        run: |
+          mkdir -p autotimeset
+          cd autotimeset
+
+          TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
+          # Download autotimeset core ipk (but not luci-app-autotimeset)
+          curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)autotimeset.*?\.ipk' | while read -r file; do
+            new_file_name=$(echo "$file" | sed 's/~/_/g')
+            curl -o "$new_file_name" "$TARGET_URL$file"
+            ls "$new_file_name"
+          done
+          # Download luci-app-autotimeset ipk
+          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-autotimeset.*?\.ipk' | while read -r file; do
+            new_file_name=$(echo "$file" | sed 's/~/_/g')
+            curl -o "$new_file_name" "$TARGET_URL$file"
+            ls "$new_file_name"
+          done
+          echo "Download completed."
+
+          echo "list files of autotimeset:"
           ls -l
           mv * ../packages/
       
