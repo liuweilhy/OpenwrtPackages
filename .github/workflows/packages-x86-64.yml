@@ -219,27 +219,21 @@ jobs:
           mv * ../packages/
 
 
-      - name: Download latest autotimeset files
+      - name: Download latest taskplan(autotimeset) files
         run: |
-          mkdir -p autotimeset
-          cd autotimeset
+          mkdir -p taskplan
+          cd taskplan
 
           TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
-          # Download autotimeset core ipk (but not luci-app-autotimeset)
-          curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)autotimeset.*?\.ipk' | while read -r file; do
-            new_file_name=$(echo "$file" | sed 's/~/_/g')
-            curl -o "$new_file_name" "$TARGET_URL$file"
-            ls "$new_file_name"
-          done
-          # Download luci-app-autotimeset ipk
-          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-autotimeset.*?\.ipk' | while read -r file; do
+          # Download luci-app-taskplan ipk
+          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-taskplan.*?\.ipk' | while read -r file; do
             new_file_name=$(echo "$file" | sed 's/~/_/g')
             curl -o "$new_file_name" "$TARGET_URL$file"
             ls "$new_file_name"
           done
           echo "Download completed."
 
-          echo "list files of autotimeset:"
+          echo "list files of taskplan:"
           ls -l
           mv * ../packages/
       
