@@ -112,7 +112,7 @@ jobs:
           fi
           echo "Latest tag: $latest_tag"
           # 构造压缩包下载链接
-          tarball_url="https://github.com/sbwml/luci-app-mosdns/releases/download/${latest_tag}/x86_64-openwrt-${packageversion}.tar.gz"
+          tarball_url="https://github.com/sbwml/luci-app-mosdns/releases/download/${latest_tag}/x86_64-openwrt-${PACKAGEVERSION}.tar.gz"
           echo "Downloading tarball: $tarball_url"
           curl --connect-timeout 30 -m 600 -kLo "mosdns_x86_64.tar.gz" "$tarball_url"
           if [ $? -ne 0 ]; then
