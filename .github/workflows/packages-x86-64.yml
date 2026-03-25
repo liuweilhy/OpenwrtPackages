@@ -221,7 +221,13 @@ jobs:
           echo "List files of poweroffdevice:"
           ls -l
           # 移动文件到 ../packages/
-          mv * ../packages/
+          if find . -maxdepth 1 -mindepth 1 -type d | grep -q .; then
+            echo "Subdirectory detected, moving files from subdirectory..."
+            find . -mindepth 2 -maxdepth 2 -type f | xargs -I {} mv {} ../packages/
+          else
+            echo "No subdirectory, moving files directly..."
+            mv * ../packages/
+          fi
 
 
       - name: Download latest taskplan(autotimeset) files
