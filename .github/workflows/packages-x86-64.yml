@@ -64,134 +64,134 @@ jobs:
       #    mv * ../packages/
       
 
-      - name: Download latest AdGuardHome files
-        run: |
-          mkdir -p AdGuardHome
-          cd AdGuardHome
-
-          echo "download AdGuardHome files..."
-          latest_tag=$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest | jq -r '.tag_name')
-          curl -LO "https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_tag}/AdGuardHome_linux_amd64.tar.gz"
-          echo "Download completed."
-
-          TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
-          # Download adguardhome core ipk (but not luci-app-adguardhome)
-          curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)adguardhome.*?\.ipk' | while read -r file; do
-            new_file_name=$(echo "$file" | sed 's/~/_/g')
-            curl -o "$new_file_name" "$TARGET_URL$file"
-            ls "$new_file_name"
-          done
-          # Download luci-app-adguardhome ipk
-          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-adguardhome.*?\.ipk' | while read -r file; do
-            new_file_name=$(echo "$file" | sed 's/~/_/g')
-            curl -o "$new_file_name" "$TARGET_URL$file"
-            ls "$new_file_name"
-          done
-          echo "Download completed."
-
-          tar --one-top-level=AdGuardHome_x86_64 -xvzf AdGuardHome_linux_amd64.tar.gz
-          mv AdGuardHome_x86_64/AdGuardHome/AdGuardHome ./
-          rm AdGuardHome_linux_amd64.tar.gz
-          rm -r AdGuardHome_x86_64/
-
-          echo "list files of AdGuardHome:"
-          ls -l
-          mv * ../packages/
-
-
-      - name: Download latest mosdns files
-        run: |
-          mkdir -p mosdns
-          cd mosdns
-
-          echo "Downloading MosDNS files..."
-          latest_tag=$(curl -sk https://api.github.com/repos/sbwml/luci-app-mosdns/releases | grep "tag_name" | grep v5 | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//;s/ //')
-          if [ -z "$latest_tag" ]; then
-            echo "Failed to get latest tag, please check the network status."
-            exit 1
-          fi
-          echo "Latest tag: $latest_tag"
-          # 构造压缩包下载链接
-          tarball_url="https://github.com/sbwml/luci-app-mosdns/releases/download/${latest_tag}/x86_64-openwrt-${PACKAGEVERSION}.tar.gz"
-          echo "Downloading tarball: $tarball_url"
-          curl --connect-timeout 30 -m 600 -kLo "mosdns_x86_64.tar.gz" "$tarball_url"
-          if [ $? -ne 0 ]; then
-            echo "Error! Download tarball failed."
-            exit 1
-          fi
-          # 解压压缩包
-          echo "Extracting tarball..."
-          tar -xzf mosdns_x86_64.tar.gz
-          if [ $? -ne 0 ]; then
-            echo "Error! Extraction failed."
-            exit 1
-          fi
-          # 删除临时文件
-          rm -f mosdns_x86_64.tar.gz
-          echo "Download and extraction completed."
-          echo "List files of mosdns:"
-          ls -l
-          # 移动文件到 ../packages/
-          if find . -maxdepth 1 -mindepth 1 -type d | grep -q .; then
-            echo "Subdirectory detected, moving files from subdirectory..."
-            find . -mindepth 2 -maxdepth 2 -type f | xargs -I {} mv {} ../packages/
-          else
-            echo "No subdirectory, moving files directly..."
-            mv * ../packages/
-          fi
+      #- name: Download latest AdGuardHome files
+      #  run: |
+      #    mkdir -p AdGuardHome
+      #    cd AdGuardHome
+      #
+      #    echo "download AdGuardHome files..."
+      #    latest_tag=$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest | jq -r '.tag_name')
+      #    curl -LO "https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_tag}/AdGuardHome_linux_amd64.tar.gz"
+      #    echo "Download completed."
+      #
+      #    TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
+      #    # Download adguardhome core ipk (but not luci-app-adguardhome)
+      #    curl -s "$TARGET_URL" | grep -oP 'href="\K(?<!luci-app-)adguardhome.*?\.ipk' | while read -r file; do
+      #      new_file_name=$(echo "$file" | sed 's/~/_/g')
+      #      curl -o "$new_file_name" "$TARGET_URL$file"
+      #      ls "$new_file_name"
+      #    done
+      #    # Download luci-app-adguardhome ipk
+      #    curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-adguardhome.*?\.ipk' | while read -r file; do
+      #      new_file_name=$(echo "$file" | sed 's/~/_/g')
+      #      curl -o "$new_file_name" "$TARGET_URL$file"
+      #      ls "$new_file_name"
+      #    done
+      #    echo "Download completed."
+      #
+      #    tar --one-top-level=AdGuardHome_x86_64 -xvzf AdGuardHome_linux_amd64.tar.gz
+      #    mv AdGuardHome_x86_64/AdGuardHome/AdGuardHome ./
+      #    rm AdGuardHome_linux_amd64.tar.gz
+      #    rm -r AdGuardHome_x86_64/
+      #
+      #    echo "list files of AdGuardHome:"
+      #    ls -l
+      #    mv * ../packages/
 
 
-      - name: Download latest nikki files
-        run: |
-          mkdir -p nikki
-          cd nikki
+      #- name: Download latest mosdns files
+      #  run: |
+      #    mkdir -p mosdns
+      #    cd mosdns
+      #
+      #    echo "Downloading MosDNS files..."
+      #    latest_tag=$(curl -sk https://api.github.com/repos/sbwml/luci-app-mosdns/releases | grep "tag_name" | grep v5 | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//;s/ //')
+      #    if [ -z "$latest_tag" ]; then
+      #      echo "Failed to get latest tag, please check the network status."
+      #      exit 1
+      #    fi
+      #    echo "Latest tag: $latest_tag"
+      #    # 构造压缩包下载链接
+      #    tarball_url="https://github.com/sbwml/luci-app-mosdns/releases/download/${latest_tag}/x86_64-openwrt-${PACKAGEVERSION}.tar.gz"
+      #    echo "Downloading tarball: $tarball_url"
+      #    curl --connect-timeout 30 -m 600 -kLo "mosdns_x86_64.tar.gz" "$tarball_url"
+      #    if [ $? -ne 0 ]; then
+      #      echo "Error! Download tarball failed."
+      #      exit 1
+      #    fi
+      #    # 解压压缩包
+      #    echo "Extracting tarball..."
+      #    tar -xzf mosdns_x86_64.tar.gz
+      #    if [ $? -ne 0 ]; then
+      #      echo "Error! Extraction failed."
+      #      exit 1
+      #    fi
+      #    # 删除临时文件
+      #    rm -f mosdns_x86_64.tar.gz
+      #    echo "Download and extraction completed."
+      #    echo "List files of mosdns:"
+      #    ls -l
+      #    # 移动文件到 ../packages/
+      #    if find . -maxdepth 1 -mindepth 1 -type d | grep -q .; then
+      #      echo "Subdirectory detected, moving files from subdirectory..."
+      #      find . -mindepth 2 -maxdepth 2 -type f | xargs -I {} mv {} ../packages/
+      #    else
+      #      echo "No subdirectory, moving files directly..."
+      #      mv * ../packages/
+      #    fi
 
-          echo "download nikki files..."
-          latest_tag=$(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | jq -r '.tag_name')
-          curl -LO $(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | grep -oP '"browser_download_url":\s*".*nikki_x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
-          tar --one-top-level=nikki_x86_64-openwrt-24.10 -xvzf nikki_x86_64-openwrt-24.10.tar.gz
-          echo "Download completed."
 
-          mv nikki_x86_64-openwrt-24.10/*.ipk ./
-          rm nikki_x86_64-openwrt-24.10.tar.gz
-          rm -r nikki_x86_64-openwrt-24.10
-
-          echo "list files of nikki:"
-          ls -l
-          mv * ../packages/
+      #- name: Download latest nikki files
+      #  run: |
+      #    mkdir -p nikki
+      #    cd nikki
+      #
+      #    echo "download nikki files..."
+      #    latest_tag=$(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | jq -r '.tag_name')
+      #    curl -LO $(curl -s https://api.github.com/repos/nikkinikki-org/OpenWrt-nikki/releases/latest | grep -oP '"browser_download_url":\s*".*nikki_x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+      #    tar --one-top-level=nikki_x86_64-openwrt-24.10 -xvzf nikki_x86_64-openwrt-24.10.tar.gz
+      #    echo "Download completed."
+      #
+      #    mv nikki_x86_64-openwrt-24.10/*.ipk ./
+      #    rm nikki_x86_64-openwrt-24.10.tar.gz
+      #    rm -r nikki_x86_64-openwrt-24.10
+      #
+      #    echo "list files of nikki:"
+      #    ls -l
+      #    mv * ../packages/
       
 
-      - name: Create OpenClash & openclash directory for git & ipk
-        run: mkdir -p OpenClash Meta openclash-x86
-        
-      - name: Checkout package branch to OpenClash directory
-        uses: actions/checkout@v4
-        with:
-          repository: vernesong/OpenClash
-          ref: package
-          path: OpenClash
-          
-      - name: Checkout core branch to Meta directory
-        uses: actions/checkout@v4
-        with:
-          repository: vernesong/OpenClash
-          path: Meta
-          ref: core
-
-      - name: Copy latest openclash to openclash directory
-        run: |
-          echo "download openclash files..."
-          cp OpenClash/master/*.ipk openclash-x86
-          tar -xzvf Meta/master/meta/clash-linux-amd64.tar.gz -C openclash-x86
-          echo "Download completed."
-
-          cd openclash-x86
-          mv clash clash_meta
-
-          echo "list files of openclash:"
-          ls -l
-          mv *.ipk ../packages/
-          mv clash_meta ../packages/
+      #- name: Create OpenClash & openclash directory for git & ipk
+      #  run: mkdir -p OpenClash Meta openclash-x86
+      #  
+      #- name: Checkout package branch to OpenClash directory
+      #  uses: actions/checkout@v4
+      #  with:
+      #    repository: vernesong/OpenClash
+      #    ref: package
+      #    path: OpenClash
+      #    
+      #- name: Checkout core branch to Meta directory
+      #  uses: actions/checkout@v4
+      #  with:
+      #    repository: vernesong/OpenClash
+      #    path: Meta
+      #    ref: core
+      #
+      #- name: Copy latest openclash to openclash directory
+      #  run: |
+      #    echo "download openclash files..."
+      #    cp OpenClash/master/*.ipk openclash-x86
+      #    tar -xzvf Meta/master/meta/clash-linux-amd64.tar.gz -C openclash-x86
+      #    echo "Download completed."
+      #
+      #    cd openclash-x86
+      #    mv clash clash_meta
+      #
+      #    echo "list files of openclash:"
+      #    ls -l
+      #    mv *.ipk ../packages/
+      #    mv clash_meta ../packages/
 
 
       - name: Download latest poweroffdevice files
@@ -236,23 +236,23 @@ jobs:
           fi
 
 
-      - name: Download latest taskplan(autotimeset) files
-        run: |
-          mkdir -p taskplan
-          cd taskplan
-
-          TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
-          # Download luci-app-taskplan ipk
-          curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-taskplan.*?\.ipk' | while read -r file; do
-            new_file_name=$(echo "$file" | sed 's/~/_/g')
-            curl -o "$new_file_name" "$TARGET_URL$file"
-            ls "$new_file_name"
-          done
-          echo "Download completed."
-
-          echo "list files of taskplan:"
-          ls -l
-          mv * ../packages/
+      #- name: Download latest taskplan(autotimeset) files
+      #  run: |
+      #    mkdir -p taskplan
+      #    cd taskplan
+      #
+      #    TARGET_URL=https://dl.openwrt.ai/packages-$PACKAGEVERSION/x86_64/kiddin9/
+      #    # Download luci-app-taskplan ipk
+      #    curl -s "$TARGET_URL" | grep -oP 'href="\Kluci-app-taskplan.*?\.ipk' | while read -r file; do
+      #      new_file_name=$(echo "$file" | sed 's/~/_/g')
+      #      curl -o "$new_file_name" "$TARGET_URL$file"
+      #      ls "$new_file_name"
+      #    done
+      #    echo "Download completed."
+      #
+      #    echo "list files of taskplan:"
+      #    ls -l
+      #    mv * ../packages/
       
 
       - name: Upload ipk files as release assets
